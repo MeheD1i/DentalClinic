@@ -9,11 +9,17 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.widget.Toolbar;
+
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -31,6 +37,7 @@ import java.io.IOException;
 public class ProfileActivity extends AppCompatActivity {
 
     private static final int CHOOSE_IMAGE = 101;
+    TextView textView;
     ImageView imageView;
     EditText editText;
     Uri uriProfileImage;
@@ -45,10 +52,14 @@ public class ProfileActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         editText = (EditText) findViewById(R.id.editTextDisplayName);
         imageView = (ImageView) findViewById(R.id.imageView);
 
         progressBar = (ProgressBar) findViewById(R.id.progressbar);
+        textView = (TextView) findViewById(R.id.textViewVerified);
 
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -77,11 +88,29 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
     private void loadUserInformation() {
-        FirebaseUser user = mAuth.getCurrentUser();
+        final FirebaseUser user = mAuth.getCurrentUser();
 
-        String photoUrl = user.getPhotoUrl().toString();
-        String displayName = user.getDisplayName();
+
         // stooooooooooooooooooooooooooooooooooooooopeed here
+
+        if (user.isEmailVerified()) {
+            textView.setText("Email Verified");
+        }
+        else {
+            textView.setText("Email Not Verified (Click to Verify)");
+            textView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    user.sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                           Toast.makeText(ProfileActivity.this, "Verification Email Sent", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            });
+
+        }
 
     }
 
@@ -161,6 +190,27 @@ public class ProfileActivity extends AppCompatActivity {
                         }
                     });
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        if (item.getItemId() == R.id.menuLogout) {
+            FirebaseAuth.getInstance().signOut();
+            finish();
+            startActivity(new Intent(this, MainActivity.class));
+        }
+
+        return true;
     }
 
     private void showImageChooser() {
